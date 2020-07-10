@@ -1,183 +1,51 @@
-# Project 2 - Ames Housing Data and Kaggle Challenge
+# Project 2: Ames, Iowa Housing Data
 
-Welcome to Project 2! It's time to start modeling.
+## Problem Statements
 
-**Primary Learning Objectives:**
-1. Creating and iteratively refining a regression model
-2. Using [Kaggle](https://www.kaggle.com/) to practice the modeling process
-3. Providing business insights through reporting and presentation.
+> **Problem 1 - For Kaggle: What data cleaning, feature engineering, and modelling techniques minimize the root mean squared error (RMSE) of predicted home sales prices in the Ames, Iowa housing dataset?  
+>
+> Problem 2 - Further Inquiry: If the aforementioned model is accurate enough, can prediction inaccuracies be said to reflect valuation errors rather than modeling errors? If so, can I build a pipeline to return undervalued homes in a user-navigable widget?
 
-You are tasked with creating a regression model based on the Ames Housing Dataset. This model will predict the price of a house at sale.
 
-The Ames Housing Dataset is an exceptionally detailed and robust dataset with over 70 columns of different features relating to houses.
+## Data
 
-Secondly, we are hosting a competition on Kaggle to give you the opportunity to practice the following skills:
+> The two datasets provided by Kaggle (train.csv, test.csv), contain housing data from homes sold in Ames, Iowa between 2006 and 2010, inclusive. The train dataset contains 2051 unique homes and 81 features such as lot square footage, number of half bathrooms, number of cars the garage can hold, etc. The test dataset contains 878 unique homes and 80 features, the same features as the train set less one, 'SalePrice'. The sale price feature will serve as the target variable for this modeling project. 
 
-- Refining models over time
-- Use of train-test split, cross-validation, and data with unknown values for the target to simulate the modeling process
-- The use of Kaggle as a place to practice data science
 
-As always, you will be submitting a technical report and a presentation. **You may find that the best model for Kaggle is not the best model to address your data science problem.**
+## Data Cleaning and Feature Engineering
 
-## Set-up
+> project_2/data_cleaning_and_engineering.ipynb
+>
+> **My data cleaning approach aimed to preserve as many features as possible, but stringently reject outliers**. Missing values were imputed with logical replacement values as to preserve those features for regression modeling. Several catergorical features were one-hot-encoded and others were converted to ordinal values in order to suit regression modeling. For outlier detection, I calculated the euclidean distance between all points in the feature_x(standardized) vs SalePrice(standardized) 2-dimensional plane, and rejected observations whose nearest neighboring point was significantly farther than the mean distance. My idea was to reject observations that radically differed from the trend of that 2d relationship, not simply reject values that were extreme within a single dimension. 2nd degree polynomial features were created for non-binary numeric columns.
 
-Before you begin working on this project, please do the following:
+> Several permutations of this cleaning and engineering pipeline were tested. For a synopsis of each dataset contained in the project_2/datasets folder, refer to the project_2/dataset_dictionary.ipynb notebook
 
-1. Sign up for an account on [Kaggle](https://www.kaggle.com/)
-2. **IMPORTANT**: Click this link ([Regression Challenge Sign Up](https://www.kaggle.com/t/7ef1036844e142cd9edbb6b708633a12)) to **join** the competition (otherwise you will not be able to make submissions!)
-3. Review the material on the [DSI-US-12 Regression Challenge](https://www.kaggle.com/c/dsi-us-12-project-2-regression-challenge)
-4. Review the [data description](http://jse.amstat.org/v19n3/decock/DataDocumentation.txt).
+> For basic summary statistics and details of the specific transformations conducted on each feature, refer to the project_2/data_dictionary.ipynb notebook
 
-## The Modeling Process
 
-1. The train dataset has all of the columns that you will need to generate and refine your models. The test dataset has all of those columns except for the target that you are trying to predict in your Regression model.
-2. Generate your regression model using the training data. We expect that within this process, you'll be making use of:
-    - train-test split
-    - cross-validation / grid searching for hyperparameters
-    - strong exploratory data analysis to question correlation and relationship across predictive variables
-    - code that reproducibly and consistently applies feature transformation (such as the preprocessing library)
-3. Predict the values for your target column in the test dataset and submit your predictions to Kaggle to see how your model does against unknown data.
-    - **Note**: Kaggle expects to see your submissions in a specific format. Check the challenge's page to make sure you are formatting your CSVs correctly!
-    - **You are limited to models you've learned in class**. In other words, you cannot use XGBoost, Neural Networks or any other advanced model for this project.
-4. Evaluate your models!
-    - consider your evaluation metrics
-    - consider your baseline score
-    - how can your model be used for inference?
-    - why do you believe your model will generalize to new data?
+## Problem 1 - Kaggle Modeling
 
-## Submission
+> project_2/modeling_and_validation_kaggle.ipynb
+>
+> The best performing model proved to be a ridge regularized multiple regression model, trained on train_mod05.csv (outliers excluded, polynomial vars included). The target variable was log transformed as to normalize the distribution of target values. Then the entirety of train dataset features less 'PID', 'ID', and 'SalePrice' were standardized and fit to a ridge regression model. The size of the feature space precludes having a particularly interpretable model, but there seems to be a benefit in model fit. The regression lambda value was optimized via the sklearn.linear_model.RidgeCV method. **Train data was intentionally not train-test split** This allowed me to train my model on a larger amount of data, which I felt was advisable given the relatively small size of the datasets. Instead of measuring bias/variance on a hold-out dataset, I confirmed the generalizability by calculating cross validated R2 scores. Sales price values were then predicted for the 878 test dataset observations, exponentiated to return them to their original scale, and submitted to Kaggle
 
-Materials must be submitted by the beginning of class on **Friday, July 10**.
+> These techniques resulted in mean cross validated **R2 scores of approximately 0.92**. My lowest **RMSE score reached 20208.78**, which is roughly equivalent to an average housing price prediction miss of $20208.78. This value was stable across train and test sets 
 
-The last day for the Kaggle competition will be **Friday, July 10**.
 
-Your technical report will be hosted on Github Enterprise. Make sure it includes:
+## Problem 2 - Further Inquiry
 
-- A README.md (that isn't this file)
-- Jupyter notebook(s) with your analysis and models (renamed to describe your project)
-- At least one successful prediction submission on [DSI-US-12 Regression Challenge](https://www.kaggle.com/c/dsi-us-12-project-2-regression-challenge) --  you should see your name in the "[Leaderboard](https://www.kaggle.com/c/dsi-us-12-project-2-regression-challenge/leaderboard)" tab.
-- Data files
-- Presentation slides
-- Any other necessary files (images, etc.)
+> project_2/modeling_and_validation_presentation.ipynb
+>
+> Using the same model described above, I predicted sales prices for the train dataset and compared them with the actual sales prices. Given the accuracy of my model, I believe it is fair to say that some amount of the variance of these residual values is attributable to poor valuations rather than poor modeling. Although I recognize that it is difficult to disentangle the two, and the logic is somewhat circular. Regardless, I found 219 homes that sold for less than 90% of their theoretical value predicted by the model. After calculating a few descriptive statistics and comparing the undervalued and not-undervalued data subsets, I created a widget so that non-technical users might be able to navigate the 219 undervalued homes. The code to build that widget was almost entirely borrowed from: https://medium.com/@marekermk/guide-to-interactive-pandas-dataframe-representation-485
+acae02946 However the DataTables object it is built on presents lots of opportunity for further iteration.
 
-**Check with your local instructor for how they would like you to submit your repo for review.**
 
----
+## Future Directions:
+* Engineer more features, create features more delibrately rather than relying on regularization
+* Use LASSO regression for feature selection (attempted, without success)
+* Conduct a more thorough analysis of undervalued homes - disentangle valuation error from model error
+* Add drop down menu to dataframe widget
 
-## Presentation Structure
 
-- **Must be within time limit established by local instructor.**
-- Use Google Slides or some other visual aid (Keynote, Powerpoint, etc).
-- Consider the audience. **Check with your local instructor for direction**.
-- Start with the **data science problem**.
-- Use visuals that are appropriately scaled and interpretable.
-- Talk about your procedure/methodology (high level).
-- Talk about your primary findings.
-- Make sure you provide **clear recommendations** that follow logically from your analyses and narrative and answer your data science problem.
-
-Be sure to rehearse and time your presentation before class.
-
----
-
-## Rubric
-Your local instructor will evaluate your project (for the most part) using the following criteria.  You should make sure that you consider and/or follow most if not all of the considerations/recommendations outlined below **while** working through your project.
-
-**Scores will be out of 27 points based on the 9 items in the rubric.** <br>
-*3 points per section*<br>
-
-| Score | Interpretation |
-| --- | --- |
-| **0** | *Project fails to meet the minimum requirements for this item.* |
-| **1** | *Project meets the minimum requirements for this item, but falls significantly short of portfolio-ready expectations.* |
-| **2** | *Project exceeds the minimum requirements for this item, but falls short of portfolio-ready expectations.* |
-| **3** | *Project meets or exceeds portfolio-ready expectations; demonstrates a thorough understanding of every outlined consideration.* |
-
-### The Data Science Process
-
-**Problem Statement**
-- Is it clear what the student plans to do?
-- What type of model will be developed?
-- How will success be evaluated?
-- Is the scope of the project appropriate?
-- Is it clear who cares about this or why this is important to investigate?
-- Does the student consider the audience and the primary and secondary stakeholders?
-
-**Data Cleaning and EDA**
-- Are missing values imputed appropriately?
-- Are distributions examined and described?
-- Are outliers identified and addressed?
-- Are appropriate summary statistics provided?
-- Are steps taken during data cleaning and EDA framed appropriately?
-- Does the student address whether or not they are likely to be able to answer their problem statement with the provided data given what they've discovered during EDA?
-
-**Preprocessing and Modeling**
-- Are categorical variables one-hot encoded?
-- Does the student investigate or manufacture features with linear relationships to the target?
-- Have the data been scaled appropriately?
-- Does the student properly split and/or sample the data for validation/training purposes?
-- Does the student utilize feature selection to remove noisy or multi-collinear features?
-- Does the student test and evaluate a variety of models to identify a production algorithm (**AT MINIMUM:** linear regression, lasso, and ridge)?
-- Does the student defend their choice of production model relevant to the data at hand and the problem?
-- Does the student explain how the model works and evaluate its performance successes/downfalls?
-
-**Evaluation and Conceptual Understanding**
-- Does the student accurately identify and explain the baseline score?
-- Does the student select and use metrics relevant to the problem objective?
-- Is more than one metric utilized in order to better assess performance?
-- Does the student interpret the results of their model for purposes of inference?
-- Is domain knowledge demonstrated when interpreting results?
-- Does the student provide appropriate interpretation with regards to descriptive and inferential statistics?
-
-**Conclusion and Recommendations**
-- Does the student provide appropriate context to connect individual steps back to the overall project?
-- Is it clear how the final recommendations were reached?
-- Are the conclusions/recommendations clearly stated?
-- Does the conclusion answer the original problem statement?
-- Does the student address how findings of this research can be applied for the benefit of stakeholders?
-- Are future steps to move the project forward identified?
-
-### Organization and Professionalism
-
-**Project Organization**
-- Are modules imported correctly (using appropriate aliases)?
-- Are data imported/saved using relative paths?
-- Does the README provide a good executive summary of the project?
-- Is markdown formatting used appropriately to structure notebooks?
-- Are there an appropriate amount of comments to support the code?
-- Are files & directories organized correctly?
-- Are there unnecessary files included?
-- Do files and directories have well-structured, appropriate, consistent names?
-
-**Visualizations**
-- Are sufficient visualizations provided?
-- Do plots accurately demonstrate valid relationships?
-- Are plots labeled properly?
-- Are plots interpreted appropriately?
-- Are plots formatted and scaled appropriately for inclusion in a notebook-based technical report?
-
-**Python Syntax and Control Flow**
-- Is care taken to write human readable code?
-- Is the code syntactically correct (no runtime errors)?
-- Does the code generate desired results (logically correct)?
-- Does the code follows general best practices and style guidelines?
-- Are Pandas functions used appropriately?
-- Are `sklearn` methods used appropriately?
-
-**Presentation**
-- Is the problem statement clearly presented?
-- Does a strong narrative run through the presentation building toward a final conclusion?
-- Are the conclusions/recommendations clearly stated?
-- Is the level of technicality appropriate for the intended audience?
-- Is the student substantially over or under time?
-- Does the student appropriately pace their presentation?
-- Does the student deliver their message with clarity and volume?
-- Are appropriate visualizations generated for the intended audience?
-- Are visualizations necessary and useful for supporting conclusions/explaining findings?
-
-In order to pass the project, students must earn a minimum score of 1 for each category.
-- Earning below a 1 in one or more of the above categories would result in a failing project.
-- While a minimum of 1 in each category is the required threshold for graduation, students should aim to earn at least an average of 1.5 across each category. An average score below 1.5, while it may be passing, means students may want to solicit specific feedback in order to significantly improve the project before showcasing it as part of a portfolio or the job search.
-
-### REMEMBER:
-
-This is a learning environment and you are encouraged to try new things, even if they don't work out as well as you planned! While this rubric outlines what we look for in a _good_ project, it is up to you to go above and beyond to create a _great_ project. **Learn from your failures and you'll be prepared to succeed in the workforce**.
+### Slide Deck
+> For a presentation on Problem 2, tailored to a lay audience, see project_2/Project2_AmesIA.pptx
